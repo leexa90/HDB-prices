@@ -16,15 +16,20 @@ import ssl
 import pandas as pd
 import numpy as np
 import re as re
-
-
+from matplotlib import *
+from pylab import *
+rcParams['mathtext.default'] = 'regular'
+matplotlib.rcParams.update({'font.size': 12})
+mpl.rcParams['axes.linewidth'] = 2
+mpl.rcParams['font.weight'] = 'medium'
+mpl.rcParams['axes.labelweight'] = 'semibold'
 # In[2]:
 
 '''
 This file does analysis of data
 '''
 
-train=pd.read_csv('train_mrt.csv', header=0)
+train=pd.read_csv('train_mrt.csv.gz', header=0)
 train=train.sort_values(by='month').reset_index()
 target='resale_price'
 predictors=[x for x in  list(train.keys()) if x!=target]
@@ -177,9 +182,9 @@ def triple_plot(x_var,y_var,plt=plt,train=train,legend=True): #plots the median,
     while len(uniq) > 100:
         uniq= uniq[0::2]
         diff = (uniq[-1]-uniq[0])/len(uniq)
-    plt.plot(uniq,map(lambda x : np.percentile(train[(train[x_var] > x-diff) & (train[x_var]< x+diff)][y_var],75),uniq),markersize=1,color='orange',alpha=0.99,linewidth=1,label='interquartile range')
-    plt.plot(uniq,map(lambda x : np.percentile(train[(train[x_var] > x-diff) & (train[x_var]< x+diff)][y_var],25),uniq),markersize=1,color='orange',alpha=0.99,linewidth=1)
-    plt.plot(uniq,map(lambda x : np.median(train[(train[x_var] > x-diff) & (train[x_var]< x+diff)][y_var]),uniq),markersize=1,color='red',label='median',alpha=0.99,linewidth=1)
+    plt.plot(uniq,map(lambda x : np.percentile(train[(train[x_var] > x-diff) & (train[x_var]< x+diff)][y_var],75),uniq),markersize=2,color='orange',alpha=0.99,linewidth=1,label='interquartile range')
+    plt.plot(uniq,map(lambda x : np.percentile(train[(train[x_var] > x-diff) & (train[x_var]< x+diff)][y_var],25),uniq),markersize=2,color='orange',alpha=0.99,linewidth=1)
+    plt.plot(uniq,map(lambda x : np.median(train[(train[x_var] > x-diff) & (train[x_var]< x+diff)][y_var]),uniq),markersize=2,color='red',label='median',alpha=0.99,linewidth=1)
     if legend:
         plt.legend()
 
@@ -209,16 +214,100 @@ plt.colorbar()
 plt.xlabel('lease length (years)')
 plt.ylabel('normalized price per sqm')
 triple_plot('lease_length','price_sqm')
-plt.savefig('leaseLength_and_price',dpi=600)
+plt.tight_layout()
+
+plt.savefig('leaseLength_and_price')
 ##plt.show()
 plt.clf()
+
+# In[15]:
+
+plt.hist2d(train['floor_area_sqm'],train['norresale_price'],200,norm=LogNorm())
+triple_plot('floor_area_sqm','norresale_price')
+plt.colorbar()
+plt.xlabel('floor area (sq meter)')
+plt.ylabel('normalized price per sqm')
+plt.savefig('floor_sq_area')
+#plt.show()
+plt.clf()
+train[['floor_area_sqm','storey_range','lease_commence_date','month',target]].corr()
+
+
+# In[16]:
+
+plt.hist2d(train['month'],train['resale_price'],200,norm=LogNorm())
+triple_plot('month','resale_price')
+plt.colorbar()
+plt.xlabel('year')
+plt.ylabel('resale price (SG dollars)')
+plt.tight_layout()
+plt.savefig('price_over_years')
+#plt.show()
+plt.clf()
+train[['floor_area_sqm','storey_range','lease_commence_date','month',target]].corr()
+
+
+# In[17]:
+a=train[train['lease_length']< 5]
+plt.hist(a['month'],bins=100)
+plt.tight_layout()
+plt.xlabel('year')
+plt.ylabel('number of houses sold before MOP')
+plt.tight_layout()
+plt.savefig('b4 five year')
+
+
+
+plt.hist2d(train['dist_nearestMRT'],train['norresale_price'],200,norm=LogNorm())
+triple_plot('dist_nearestMRT','norresale_price')
+plt.xlabel('distance to nearest MRT (km)')
+plt.ylabel('normalized price per sqm')
+plt.colorbar()
+plt.tight_layout()
+plt.savefig('dist_mrt')
+#plt.show()
+plt.clf()
+train[['dist_nearestMRT',target, 'norresale_price']].corr()
+
+
+# In[18]:
+
+from matplotlib import *
+from matplotlib.colors import LogNorm
+
+plt.hist2d(train['Time_sinceMRTbuilt'],train['nor'+target],100,norm=LogNorm())
+plt.colorbar()
+#plt.hist2d(train[train['Time_sinceMRTbuilt'] >0 ]['Time_sinceMRTbuilt'] ,train[train['Time_sinceMRTbuilt'] >0 ]['price_sqm'],200,norm=LogNorm())
+plt.xlabel('year since nearest MRT was built')
+plt.ylabel('normalized resale price \n(relative to mean of particular month)')
+triple_plot('Time_sinceMRTbuilt','norresale_price')
+plt.tight_layout()
+plt.savefig('Time_since_mrtBuilt')
+#plt.show()
+plt.clf()
+train[['nor'+target,'Time_sinceMRTbuilt']].corr() #negative correlation, built longer = lower price
+
+
+# In[19]:
+
+train['price_sqm']=train[target]/(train['month_mean']*train['floor_area_sqm']) #normalized by monthly mean
+plt.hist2d(train['Time_sinceMRTbuilt'],train['price_sqm'],200,norm=LogNorm())
+plt.xlabel('year since nearest MRT was built')
+plt.ylabel('resale price per sqm \n(relative to mean of particular month)')
+triple_plot('Time_sinceMRTbuilt','price_sqm')
+plt.tight_layout()
+plt.savefig('Time_since_mrtBuilt2')
+plt.colorbar()
+#plt.show()
+plt.clf()
+train[['Time_sinceMRTbuilt','price_sqm']].corr() # negative one percent correlation
 
 
 # In[22]:
 
 
 train.town.unique()
-fig, ax1 = plt.subplots(nrows=5, ncols=6,figsize=(20, 15))
+fig, ax1 = plt.subplots(nrows=5, ncols=6,figsize=(25, 20))
 
 for i in range(0,27):
     if i==0:
@@ -239,7 +328,7 @@ for i in range(0,27):
     ax1[i//6,i%6].set_ylabel('normalized price per sqm')
     #print i,i//6,i%6
 fig.tight_layout()
-plt.savefig('town',dpi=600)
+plt.savefig('town')
 #plt.show()
 plt.clf()
     
@@ -266,83 +355,12 @@ plt.setp(bp['boxes'], color='black')
 plt.setp(bp['whiskers'], color='black')
 plt.setp(bp['fliers'], color='red', marker='+')
 xtickNames = plt.setp(ax1, xticklabels=range(0,int(train['storey_range'].max()),5))
-plt.savefig('story',dpi=600)
+plt.tight_layout()
+plt.savefig('story')
 #plt.show()
 plt.clf()
 
 
-# In[15]:
-
-plt.hist2d(train['floor_area_sqm'],train['norresale_price'],200,norm=LogNorm())
-triple_plot('floor_area_sqm','norresale_price')
-plt.colorbar()
-plt.xlabel('floor area (sq meter)')
-plt.ylabel('normalized price per sqm')
-plt.savefig('floor_sq_area',dpi=600)
-#plt.show()
-plt.clf()
-train[['floor_area_sqm','storey_range','lease_commence_date','month',target]].corr()
-
-
-# In[16]:
-
-plt.hist2d(train['month'],train['resale_price'],200,norm=LogNorm())
-triple_plot('month','resale_price')
-plt.colorbar()
-plt.xlabel('year')
-plt.ylabel('resale price (SG dollars)')
-plt.savefig('price_over_years',dpi=600)
-#plt.show()
-plt.clf()
-train[['floor_area_sqm','storey_range','lease_commence_date','month',target]].corr()
-
-
-# In[17]:
-
-
-
-
-
-plt.hist2d(train['dist_nearestMRT'],train['norresale_price'],200,norm=LogNorm())
-triple_plot('dist_nearestMRT','norresale_price')
-plt.xlabel('distance to nearest MRT (km)')
-plt.ylabel('normalized price per sqm')
-plt.colorbar()
-plt.savefig('dist_mrt',dpi=600)
-#plt.show()
-plt.clf()
-train[['dist_nearestMRT',target, 'norresale_price']].corr()
-
-
-# In[18]:
-
-from matplotlib import *
-from matplotlib.colors import LogNorm
-
-plt.hist2d(train['Time_sinceMRTbuilt'],train['nor'+target],100,norm=LogNorm())
-plt.colorbar()
-#plt.hist2d(train[train['Time_sinceMRTbuilt'] >0 ]['Time_sinceMRTbuilt'] ,train[train['Time_sinceMRTbuilt'] >0 ]['price_sqm'],200,norm=LogNorm())
-plt.xlabel('year since nearest MRT was built')
-plt.ylabel('normalized resale price \n(relative to mean of particular month)')
-triple_plot('Time_sinceMRTbuilt','norresale_price')
-plt.savefig('Time_since_mrtBuilt',dpi=600)
-#plt.show()
-plt.clf()
-train[['nor'+target,'Time_sinceMRTbuilt']].corr() #negative correlation, built longer = lower price
-
-
-# In[19]:
-
-train['price_sqm']=train[target]/(train['month_mean']*train['floor_area_sqm']) #normalized by monthly mean
-plt.hist2d(train['Time_sinceMRTbuilt'],train['price_sqm'],200,norm=LogNorm())
-plt.xlabel('year since nearest MRT was built')
-plt.ylabel('resale price per sqm \n(relative to mean of particular month)')
-triple_plot('Time_sinceMRTbuilt','price_sqm')
-plt.savefig('Time_since_mrtBuilt2',dpi=600)
-plt.colorbar()
-#plt.show()
-plt.clf()
-train[['Time_sinceMRTbuilt','price_sqm']].corr() # negative one percent correlation
 
 class MidpointNormalize(colors.Normalize):
     def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
