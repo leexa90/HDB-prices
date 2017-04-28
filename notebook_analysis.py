@@ -113,12 +113,6 @@ dictt_flattype={'3 ROOM': 3, '4 ROOM': 4, '1 ROOM': 1,
 train['flat_type']=train['flat_type'].map(dictt_flattype).astype(np.int16)
 train['storey_range']=train['storey_range'].map(lambda x:0.5*int(x[0:2])+0.5*int(x[-2:]))
 
-dictt_flat_model={}
-counter=0
-for i in train.flat_model.unique():
-    dictt_flat_model[i]=counter
-    counter += 1
-train['flat_model']=train['flat_model'].map(dictt_flat_model)
 
 dictt_street_name={}
 counter=0
@@ -133,7 +127,6 @@ for i in sorted(train.block.unique()):
     dictt_block[i]=int(i.translate(None,string.letters)) #keep digits only
 train['block']=train['block'].map(dictt_block)
 
-
 # In[7]:
 
 '''
@@ -147,6 +140,15 @@ for i in sorted(train['month'].unique()):
 	dictt_month[i]= np.median(train[train['month']==i][target]) #median isntad of mean
 train['month_mean']=train['month'].map(dictt_month).astype(np.int64)
 train['nor'+target]=1.0*train[target]/train['month_mean']
+
+
+# In[10]:
+
+''' getting the price per square meter, normalized by mean of houses sold that month. Gives a guage of how expensive the house is relative to other places in singapore
+'''
+train['price_sqm']=train[target]/(train['month_mean']*train['floor_area_sqm']) #normalized by monthly mean
+train['lease_length']=train.month - train.lease_commence_date
+
 x=[]
 for i in list(train['town'].unique()):
     x+= [[ i,np.mean(train[train['town']==i]['nor'+target])],]
@@ -158,9 +160,20 @@ train['town']=train['town'].map(dictt_town).astype(np.int32)
 predictors+=['month_mean', 'nor'+target]
 for i in sorted(train['flat_type'].unique()):
     print i, np.mean(train[train['flat_type']==i]['nor'+target])
-    dictt_flattype[i]=i
+    
+dictt_flat_model={}
+counter=0
 
-
+xxx=[]
+for i in list(train['flat_model'].unique()):
+    xxx+= [[ i,np.mean(train[train['flat_model']==i]['nor'+target])],]
+counter=0
+for i in sorted(xxx,key=lambda x:x[1]):
+    dictt_flat_model[i[0]]=counter
+    counter+=1
+train['flat_model']=train['flat_model'].map(dictt_flat_model)
+for i in sorted(train['flat_model'].unique()):
+    print i, np.mean(train[train['flat_model']==i]['nor'+target])
 # In[8]:
 
 # predicts on future data from 2013
@@ -179,7 +192,7 @@ def triple_plot(x_var,y_var,plt=plt,train=train,legend=True): #plots the median,
     uniq=sorted(train[x_var].unique())
     uniq= uniq
     diff = (uniq[-1]-uniq[0])/len(uniq)
-    while len(uniq) > 100:
+    while len(uniq) > 50:
         uniq= uniq[0::2]
         diff = (uniq[-1]-uniq[0])/len(uniq)
     plt.plot(uniq,map(lambda x : np.percentile(train[(train[x_var] > x-diff) & (train[x_var]< x+diff)][y_var],75),uniq),markersize=2,color='orange',alpha=0.99,linewidth=1,label='interquartile range')
@@ -189,14 +202,20 @@ def triple_plot(x_var,y_var,plt=plt,train=train,legend=True): #plots the median,
         plt.legend()
 
 
+def triple_plot2(x_var,y_var,plt=plt,train=train,legend=True): #plots the median, and 25,75 percentiles for hist2d plot
+    uniq=sorted(train[x_var].unique())
+    uniq= uniq
+    diff = (uniq[-1]-uniq[0])/len(uniq)
+    while len(uniq) > 50:
+        uniq= uniq[0::2]
+        diff = (uniq[-1]-uniq[0])/len(uniq)
+    plt.plot(uniq,\
+             map(lambda x : np.median(train[(train[x_var] > x-diff) & (train[x_var]< x+diff)][y_var]),uniq)\
+             ,markersize=2,color='blue',ls='-',label='Median All',alpha=0.99,linewidth=1)
+    if legend:
+        plt.legend()
 
 
-# In[10]:
-
-''' getting the price per square meter, normalized by mean of houses sold that month. Gives a guage of how expensive the house is relative to other places in singapore
-'''
-train['price_sqm']=train[target]/(train['month_mean']*train['floor_area_sqm']) #normalized by monthly mean
-train['lease_length']=train.month - train.lease_commence_date
 
 
 # In[11]:
@@ -275,7 +294,7 @@ train[['dist_nearestMRT',target, 'norresale_price']].corr()
 from matplotlib import *
 from matplotlib.colors import LogNorm
 
-plt.hist2d(train['Time_sinceMRTbuilt'],train['nor'+target],100,norm=LogNorm())
+plt.hist2d(train['Time_sinceMRTbuilt'],train['nor'+target],200,norm=LogNorm())
 plt.colorbar()
 #plt.hist2d(train[train['Time_sinceMRTbuilt'] >0 ]['Time_sinceMRTbuilt'] ,train[train['Time_sinceMRTbuilt'] >0 ]['price_sqm'],200,norm=LogNorm())
 plt.xlabel('year since nearest MRT was built')
@@ -309,28 +328,51 @@ train[['Time_sinceMRTbuilt','price_sqm']].corr() # negative one percent correlat
 train.town.unique()
 fig, ax1 = plt.subplots(nrows=5, ncols=6,figsize=(25, 20))
 
-for i in range(0,27):
-    if i==0:
-        a=ax1[i//6,i%6].hist2d(train[train['town']==i]['lease_length'],train[train['town']==i]['price_sqm'],100,range=((0,50),(0,0.04)),\
-                               norm=LogNorm(),normed=True)
-        aa=ax1[-1,-1].imshow([[0,0],[0,0]],norm=LogNorm(),vmin=1,vmax=50)
-        cb=fig.colorbar(aa,ax=ax1[0,0])
-        cb.set_ticks(range(1,10)+[10*x for x in range(1,6)])
-        cb.set_ticklabels([1, '', 3, '', '','' ,'' , '','' , 10, '', '','' , 50])
-        triple_plot('lease_length','price_sqm',plt=ax1[i//6,i%6],train=train[train['town']==i],legend=True)
-        ax1[i//6,i%6].set_xticks([0,10,20,30,40,50])
-    else:
-        a=ax1[i//6,i%6].hist2d(train[train['town']==i]['lease_length'],train[train['town']==i]['price_sqm'],100,range=((0,50),(0,0.04)),\
-                               norm=LogNorm(),normed=True)#,norm=LogNorm())
-        triple_plot('lease_length','price_sqm',plt=ax1[i//6,i%6],train=train[train['town']==i],legend=False)
-    ax1[i//6,i%6].set_xlabel('lease length ')
-    ax1[i//6,i%6].set_title(str([x for x in dictt_town if dictt_town[x]==i][0])+', '+str(sum(train['town']==i))+' flats')
-    ax1[i//6,i%6].set_ylabel('normalized price per sqm')
-    #print i,i//6,i%6
-fig.tight_layout()
-plt.savefig('town')
-#plt.show()
-plt.clf()
+from make_custom_cmap import viridis_data
+
+cdict = viridis_data()
+
+my_cmap = matplotlib.colors.LinearSegmentedColormap('my_colormap',cdict,256)
+class LogNormalize(colors.Normalize):
+    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+        self.midpoint = midpoint
+        colors.Normalize.__init__(self, vmin, vmax, clip)
+
+    def __call__(self, value, clip=None):
+        # I'm ignoring masked values and all kinds of edge cases to make a
+        # simple example...
+        x= [1*x for x in range(0,10)]+[10*x for x in range(1,11)]
+        y = [np.log10(1+w)/np.log10(100) for w in x]
+        return np.ma.masked_array(np.interp(value, x, y))
+##for i in range(0,27):
+##    vmin=.1
+##    vmax=30
+##    if i==0:
+##        a=ax1[i//6,i%6].hist2d(train[train['town']==i]['lease_length'],train[train['town']==i]['price_sqm'],100,range=((0,50),(0,0.04)),\
+##                               norm=LogNorm(vmin=vmin,vmax=vmax),normed=True,cmap=my_cmap) #using my virgidis cmap and also only values from 0.1 to 100
+##        aa=ax1[-1,-1].imshow(a[0],cmap=my_cmap,vmin=vmin,vmax=vmax,norm=LogNorm(vmin=vmin,vmax=vmax))
+##        formatter = LogFormatter(10, labelOnlyBase=False) 
+##        cb=fig.colorbar(aa,ax=ax1[i//6,i%6],norm=LogNorm(vmin=vmin,vmax=vmax),cmap=my_cmap, format=formatter)
+##        cb.set_ticks([.1*x for x in range(1,10)]+[x for x in range(1,10)]+[x for x in range(10,vmax+10,10)])
+##        cb.set_ticklabels([.1, '', '', '', '','' ,'' , '','' ,1, '', '', '', '','' ,'' , '','' , 10, '', 30,'' , '','','','','',100])
+##        triple_plot('lease_length','price_sqm',plt=ax1[i//6,i%6],train=train[train['town']==i],legend=True)
+##        triple_plot2('lease_length','price_sqm',plt=ax1[i//6,i%6],legend=True)
+##        ax1[i//6,i%6].set_xticks([0,10,20,30,40,50])
+##    else:
+##        a=ax1[i//6,i%6].hist2d(train[train['town']==i]['lease_length'],train[train['town']==i]['price_sqm'],100,range=((0,50),(0,0.04)),\
+##                               norm=LogNorm(vmin=vmin,vmax=vmax),normed=True,cmap=my_cmap)#,norm=LogNorm())
+##        triple_plot('lease_length','price_sqm',plt=ax1[i//6,i%6],train=train[train['town']==i],legend=False)
+##        triple_plot2('lease_length','price_sqm',plt=ax1[i//6,i%6],legend=False)
+##    ax1[i//6,i%6].set_xlabel('lease length ')
+##    ax1[i//6,i%6].set_title(str([x for x in dictt_town if dictt_town[x]==i][0])+', '+str(sum(train['town']==i))+' flats')
+##    ax1[i//6,i%6].set_ylabel('normalized price per sqm')
+##    #print i,i//6,i%6
+##    print sum(map(lambda x : sum(x), a[0]))
+##aa=ax1[-1,-1].imshow([[0,0],[0,0]],norm=LogNorm(vmin=.1,vmax=100))
+##
+##fig.tight_layout();plt.savefig('town2',dpi=300)
+###plt.show()
+##plt.clf()
     
 
 
@@ -360,7 +402,91 @@ plt.savefig('story')
 #plt.show()
 plt.clf()
 
+fig, ax1 = plt.subplots(figsize=(10, 10))
+fig.tight_layout(pad=4.0, w_pad=4, h_pad=4)
+temp =[]
+for i in sorted(train['flat_type'].unique()):
+    temp += [train[(train['flat_type'] == i)][target]]
+bp=plt.boxplot(temp,notch=0, sym='+', vert=1, whis=1.5)
+x_axis=0
+for i in sorted(train['flat_type'].unique()):
+    x = np.random.normal(x_axis+1, 0.02, size=len(temp[x_axis]))
+    plt.plot(x,temp[x_axis] , 'r.', alpha=0.002)
+    x_axis += 1
+plt.xlabel('level')
+plt.ylabel('Resale Price')
+plt.setp(bp['boxes'], color='black')
+plt.setp(bp['whiskers'], color='black')
+plt.setp(bp['fliers'], color='red', marker='+')
+xtickNames = plt.setp(ax1, xticklabels=[x[0:7] for x in sorted(dictt_flattype)])
+plt.tight_layout()
+plt.savefig('flat_type')
+#plt.show()
+plt.clf()
 
+fig, ax1 = plt.subplots(figsize=(10, 10))
+fig.tight_layout(pad=4.0, w_pad=4, h_pad=4)
+temp =[]
+for i in sorted(train['flat_type'].unique()):
+    temp += [train[(train['flat_type'] == i)]['price_sqm']]
+bp=plt.boxplot(temp,notch=0, sym='+', vert=1, whis=1.5)
+x_axis=0
+for i in sorted(train['flat_type'].unique()):
+    x = np.random.normal(x_axis+1, 0.02, size=len(temp[x_axis]))
+    plt.plot(x,temp[x_axis] , 'r.', alpha=0.002)
+    x_axis += 1
+plt.xlabel('level')
+plt.ylabel('normalized price per sqm')
+plt.setp(bp['boxes'], color='black')
+plt.setp(bp['whiskers'], color='black')
+plt.setp(bp['fliers'], color='red', marker='+')
+xtickNames = plt.setp(ax1, xticklabels=[x[0:7] for x in sorted(dictt_flattype)])
+plt.tight_layout()
+plt.savefig('flat_type_nor_persqm')
+#plt.show()
+plt.clf()
+
+fig, ax1 = plt.subplots(figsize=(50, 10))
+fig.tight_layout(pad=4.0, w_pad=4, h_pad=4)
+temp =[]
+for i in sorted(train.flat_model.unique()):
+    temp += [train[(train['flat_model'] == i)][target]]
+bp=plt.boxplot(temp,notch=0, sym='+', vert=1, whis=1.5)
+x_axis=0
+for i in sorted(train.flat_model.unique()):
+    x = np.random.normal(x_axis+1, 0.02, size=len(temp[x_axis]))
+    plt.plot(x,temp[x_axis] , 'r.', alpha=0.002)
+    x_axis += 1
+plt.xlabel('level')
+plt.ylabel('Resale Price')
+plt.setp(bp['boxes'], color='black')
+plt.setp(bp['whiskers'], color='black')
+plt.setp(bp['fliers'], color='red', marker='+')
+xtickNames = plt.setp(ax1, xticklabels=sorted(train.flat_model.unique()))
+plt.tight_layout()
+plt.savefig('flat_model')
+#plt.show()
+plt.clf()
+
+fig, ax1 = plt.subplots(figsize=(50, 10))
+fig.tight_layout(pad=4.0, w_pad=4, h_pad=4)
+temp =[]
+for i in sorted(train.flat_model.unique()):
+    temp += [train[(train['flat_model'] == i)]['price_sqm']]
+bp=plt.boxplot(temp,notch=0, sym='+', vert=1, whis=1.5)
+x_axis=0
+for i in sorted(train.flat_model.unique()):
+    x = np.random.normal(x_axis+1, 0.02, size=len(temp[x_axis]))
+    plt.plot(x,temp[x_axis] , 'r.', alpha=0.002)
+    x_axis += 1
+plt.xlabel('level')
+plt.ylabel('normalized price per sqm')
+plt.setp(bp['boxes'], color='black')
+plt.setp(bp['whiskers'], color='black')
+plt.setp(bp['fliers'], color='red', marker='+')
+xtickNames = plt.setp(ax1, xticklabels=sorted(train.flat_model.unique()))
+plt.tight_layout()
+plt.savefig('flat_model_nor_persqm')
 
 class MidpointNormalize(colors.Normalize):
     def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
