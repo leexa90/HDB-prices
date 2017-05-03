@@ -1,0 +1,100 @@
+# Metadata for Price Range of HDB Flats Offered
+---
+Identifier: '258455a4-2b06-47ac-9643-059ad71aab2e'
+Name: 'price-range-of-hdb-flats-offered'
+Title: 'Price Range of HDB Flats Offered'
+Description:
+  - 'Price range of BTO flats offered in each FY for the following towns (Punggol
+    21, Jurong West, Choa Chu Kang, Bukit Panjang, Woodlands, Sembawang Seng Kang).'
+  - ''
+  - 'For more information on the price range, please see footnotes attached for each
+    FY.'
+Topics:
+  - 'Infrastructure'
+Keywords:
+  - 'BTO'
+  - 'Cost of Living'
+  - 'Flat Type'
+  - 'HDB'
+  - 'Housing'
+  - 'Property'
+  - 'Public Housing'
+  - 'Town'
+Publisher:
+  Name: 'Housing and Development Board'
+  Admin 1:
+    Name: 'Michelle Tay'
+    Department: 'HDB'
+    Email: 'michelle_mb_tay@hdb.gov.sg'
+  Admin 2:
+    Name: 'Toh Xue Qin'
+    Department: 'HDB'
+    Email: 'toh_xue_qin@hdb.gov.sg'
+Sources:
+  - 'Housing and Development Board'
+Source Url: 'http://www.hdb.gov.sg/cs/infoweb/about-us/news-and-publications/annual-reports'
+License: 'https://data.gov.sg/open-data-licence'
+Frequency: 'Annual'
+Coverage: '2008-04-01 to 2016-03-31'
+Last Updated: '2017-03-28T06:20:51.606228'
+Resources:
+  -
+    Identifier: 'd23b9636-5812-4b33-951e-b209de710dd5'
+    Title: 'Price Range of HDB Flats Offered'
+    Url: 'https://storage.data.gov.sg/price-range-of-hdb-flats-offered/resources/price-range-of-hdb-flats-offered-2016-11-24T06-53-12Z.csv'
+    Format: 'CSV'
+    Coverage: '2008-04-01 to 2016-03-31'
+    Last Updated: '2016-11-24T06:53:12.995464'
+    Schema:
+      -
+        Name: 'financial_year'
+        Title: 'Financial Year'
+        Type: 'datetime'
+        Sub Type: 'financial_year'
+        Format: 'YYYY'
+        Description: 'Financial year starts on 1 April and ends on 31 March'
+      -
+        Name: 'town'
+        Title: 'Town'
+        Type: 'text'
+        Sub Type: 'general'
+      -
+        Name: 'room_type'
+        Title: 'Room Type'
+        Type: 'text'
+        Sub Type: 'general'
+      -
+        Name: 'min_selling_price'
+        Title: 'Min. Selling Price'
+        Type: 'numeric'
+        Sub Type: 'general'
+        Unit Of Measure: 'S$'
+        Description: '"na" : Data not available or not applicable'
+      -
+        Name: 'max_selling_price'
+        Title: 'Max Selling Price'
+        Type: 'numeric'
+        Sub Type: 'general'
+        Unit Of Measure: 'S$'
+        Description: '"na" : Data not available or not applicable'
+      -
+        Name: 'min_selling_price_less_ahg_shg'
+        Title: 'Min Selling Price Less AHG/SHG'
+        Type: 'numeric'
+        Sub Type: 'general'
+        Unit Of Measure: 'S$'
+        Description: '"na" : Data not available or not applicable'
+      -
+        Name: 'max_selling_price_less_ahg_shg'
+        Title: 'Max Selling Price Less AHG/SHG'
+        Type: 'numeric'
+        Sub Type: 'general'
+        Unit Of Measure: 'S$'
+        Description: '"na" : Data not available or not applicable'
+  -
+    Identifier: 'ef89a2a4-d255-45bb-b681-9e6155b97d31'
+    Title: 'Footnotes in Annual Report for Price Range of HDB Flats Offered'
+    Url: 'https://storage.data.gov.sg/price-range-of-hdb-flats-offered/resources/footnotes-in-annual-report-for-price-range-of-hdb-flats-offered-2016-11-25T02-01-00Z.pdf'
+    Format: 'PDF'
+    Coverage: '2008-04-01 to 2016-03-31'
+    Last Updated: '2016-11-25T02:01:00.877212'
