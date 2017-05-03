@@ -231,13 +231,37 @@ Finding variables most correlated with normalized price per sqm (price_sqm)
 train.corr()['price_sqm']
 
 
+# plot size of HDB flat since earliest
+
+years = [1966, 1967, 1968, 1969, 1970, 1971, 1972, 1973, 1974, 1975, \
+         1976, 1977, 1978, 1979, 1980, 1981, 1982, 1983, 1984, 1985, \
+         1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, \
+         1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, \
+         2006, 2007, 2008, 2009, 2010, 2011,]
+def function(x):
+    try:
+        return np.percentile(train2[train2['lease_commence_date'] == x ]['floor_area_sqm'],50)
+    except:
+        return np.nan
+
+for i in sorted(train['flat_type'].unique()):
+    train2=train[train['flat_type']==i]
+    temp=map(lambda x : (x,function(x)),years)
+    xx=[x[0] for x in temp if x[1] is not np.nan]
+    yy=[x[1] for x in temp if x[1] is not np.nan]
+    plt.plot(xx,yy,markersize=2,alpha=0.99,linewidth=1,label=[x for x in dictt_flattype if dictt_flattype[x] ==i][0])
+
+plt.plot([1997,1997],[0,160]);plt.legend();plt.show()    
+print done
+
+
 # In[12]:
 
 plt.hist2d(train[train['lease_length'] > 0]['lease_length'],train[train['lease_length'] > 0]['price_sqm'],200,norm=LogNorm(),range=((0,50),(0,3)))
 plt.colorbar()
 plt.xlabel('lease length (years)')
 plt.ylabel('normalized price per sqm')
-triple_plot('lease_length','price_sqm',train=train[train['lease_length'] > 2.5])
+triple_plot('lease_length','price_sqm',train=train[train['lease_length'] > 2.5])  # something funky for lease length 0-2.5
 plt.tight_layout()
 plt.grid(True)
 plt.savefig('leaseLength_and_price')
@@ -364,43 +388,43 @@ class LogNormalize(colors.Normalize):
         x= [1*x for x in range(0,10)]+[10*x for x in range(1,11)]
         y = [np.log10(1+w)/np.log10(100) for w in x]
         return np.ma.masked_array(np.interp(value, x, y))
-##for i in range(0,27):
-##    vmin=.01
-##    vmax=1
-##    if i==0:
-##        a=ax1[i//6,i%6].hist2d(train[train['town']==i]['lease_length'],train[train['town']==i]['price_sqm'],100,range=((0,50),(0,3)),\
-##                               norm=LogNorm(vmin=vmin,vmax=vmax),normed=True,cmap=my_cmap) #using my virgidis cmap and also only values from 0.1 to 100
-##        aa=ax1[-1,-1].imshow(a[0],cmap=my_cmap,vmin=vmin,vmax=vmax,norm=LogNorm(vmin=vmin,vmax=vmax))
-##        formatter = LogFormatter(10, labelOnlyBase=False) 
-##        cb=fig.colorbar(aa,ax=ax1[i//6,i%6],norm=LogNorm(vmin=vmin,vmax=vmax),cmap=my_cmap, format=formatter)
-##        cb.set_ticks([vmin*x for x in range(1,10)]+[vmin*10*x for x in range(1,10)]+[x for x in range(1,vmax+1,1)])
-##        cb.set_ticklabels([vmin*x, '', '', '', '','' ,'' , '','' ,vmin*10*x, '', '', '', '','' ,'' , '','' , 1, '', 30,'' , '','','','','',100])
-##        triple_plot('lease_length','price_sqm',plt=ax1[i//6,i%6],train=train[train['town']==i],legend=True)
-##        triple_plot2('lease_length','price_sqm',plt=ax1[i//6,i%6],legend=True)
-##        ax1[i//6,i%6].set_xticks([0,10,20,30,40,50])
-##    else:
-##        a=ax1[i//6,i%6].hist2d(train[train['town']==i]['lease_length'],train[train['town']==i]['price_sqm'],100,range=((0,50),(0,3)),\
-##                               norm=LogNorm(vmin=vmin,vmax=vmax),normed=True,cmap=my_cmap)#,norm=LogNorm())
-##        triple_plot('lease_length','price_sqm',plt=ax1[i//6,i%6],train=train[train['town']==i],legend=False)
-##        triple_plot2('lease_length','price_sqm',plt=ax1[i//6,i%6],legend=False)
-##    ax1[i//6,i%6].set_xlabel('lease length ')
-##    ax1[i//6,i%6].set_title(str([x for x in dictt_town if dictt_town[x]==i][0])+', '+str(sum(train['town']==i))+' flats')
-##    ax1[i//6,i%6].set_ylabel('normalized price per sqm')
-##    #print i,i//6,i%6
-##    ax1[i//6,i%6].grid(True)
-##    print sum(map(lambda x : sum(x), a[0]))
-##aa=ax1[-1,-1].imshow([[0,0],[0,0]],norm=LogNorm(vmin=.1,vmax=100))
-##
-##fig.tight_layout();plt.savefig('town2',dpi=300)
-###plt.show()
-##plt.clf()
-    
+for i in range(0,27):
+    vmin=.01
+    vmax=1
+    if i==0:
+        a=ax1[i//6,i%6].hist2d(train[train['town']==i]['lease_length'],train[train['town']==i]['price_sqm'],100,range=((0,50),(0,3)),\
+                               norm=LogNorm(vmin=vmin,vmax=vmax),normed=True,cmap=my_cmap) #using my virgidis cmap and also only values from 0.1 to 100
+        aa=ax1[-1,-1].imshow(a[0],cmap=my_cmap,vmin=vmin,vmax=vmax,norm=LogNorm(vmin=vmin,vmax=vmax))
+        formatter = LogFormatter(10, labelOnlyBase=False) 
+        cb=fig.colorbar(aa,ax=ax1[i//6,i%6],norm=LogNorm(vmin=vmin,vmax=vmax),cmap=my_cmap, format=formatter)
+        cb.set_ticks([vmin*x for x in range(1,10)]+[vmin*10*x for x in range(1,10)]+[x for x in range(1,vmax+1,1)])
+        cb.set_ticklabels([vmin*x, '', '', '', '','' ,'' , '','' ,vmin*10*x, '', '', '', '','' ,'' , '','' , 1, '', 30,'' , '','','','','',100])
+        triple_plot('lease_length','price_sqm',plt=ax1[i//6,i%6],train=train[train['town']==i],legend=True)
+        triple_plot2('lease_length','price_sqm',plt=ax1[i//6,i%6],legend=True,train=train[train['lease_length'] > 2.5]) # something funky for lease length 0-2.5
+        ax1[i//6,i%6].set_xticks([0,10,20,30,40,50])
+    else:
+        a=ax1[i//6,i%6].hist2d(train[train['town']==i]['lease_length'],train[train['town']==i]['price_sqm'],100,range=((0,50),(0,3)),\
+                               norm=LogNorm(vmin=vmin,vmax=vmax),normed=True,cmap=my_cmap)#,norm=LogNorm())
+        triple_plot('lease_length','price_sqm',plt=ax1[i//6,i%6],train=train[train['town']==i],legend=False)
+        triple_plot2('lease_length','price_sqm',plt=ax1[i//6,i%6],legend=False,train=train[train['lease_length'] > 2.5]) # something funky for lease length 0-2.5
+    ax1[i//6,i%6].set_xlabel('lease length ')
+    ax1[i//6,i%6].set_title(str([x for x in dictt_town if dictt_town[x]==i][0])+', '+str(sum(train['town']==i))+' flats')
+    ax1[i//6,i%6].set_ylabel('normalized price per sqm')
+    #print i,i//6,i%6
+    ax1[i//6,i%6].grid(True)
+    print sum(map(lambda x : sum(x), a[0]))
+aa=ax1[-1,-1].imshow([[0,0],[0,0]],norm=LogNorm(vmin=.1,vmax=100))
+
+fig.tight_layout();plt.savefig('town2',dpi=300)
+#plt.show()
+plt.clf()
+
+
 
 
 # In[14]:
 
-''' getting the price per square meter, normalized by mean of houses sold that month. Gives a guage of how expensive the house is relative to other places in singapore
-'''
+
 fig, ax1 = plt.subplots(figsize=(7, 7))
 fig.tight_layout(pad=4.0, w_pad=4, h_pad=4)
 temp =[]
@@ -566,6 +590,8 @@ xtickNames = plt.setp(ax1, xticklabels=[x[0:5]+'\n'+x[5:10] for x in sorted(dict
 plt.tight_layout()
 plt.grid(True)
 plt.savefig(variable+'nor_persqm')
+plt.clf()
+
 
 
 
