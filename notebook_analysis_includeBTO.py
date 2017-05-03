@@ -251,7 +251,11 @@ for i in sorted(train['flat_type'].unique()):
     yy=[x[1] for x in temp if x[1] is not np.nan]
     plt.plot(xx,yy,markersize=2,alpha=0.99,linewidth=1,label=[x for x in dictt_flattype if dictt_flattype[x] ==i][0])
 
-plt.plot([1997,1997],[0,160]);plt.legend();plt.show()    
+plt.plot([1997,1997],[0,160]);plt.legend();plt.savefig('Size_over_time')
+# format from 2-room to 2 ROOM
+bto = pd.read_csv('price-range-of-hdb-flats-offered.csv',header=0)  
+bto['room_type']=map(lambda x : x[0]+' '+x[2:].upper() , bto['room_type'])
+bto['room_type']=bto['room_type'].map(dictt_flattype)
 print done
 
 
