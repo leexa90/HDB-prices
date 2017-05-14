@@ -147,10 +147,11 @@ train['nor'+target]=1.0*train[target]/train['month_mean']
 ''' getting the price per square meter, normalized by mean of houses sold that month. Gives a guage of how expensive the house is relative to other places in singapore
 '''
 
-train['price_sqm']=train[target]/(train['month_mean']*train['floor_area_sqm']) #normalized by monthly mean
-for x in train.month.unique():
+train['price_sqm_unNorm']=train[target]/(train['month_mean']*train['floor_area_sqm']) #normalized by monthly mean
+train['price_sqm']=0
+for x in train.month.unique(): #normalized to one using median of month as base
     idx = train[train['month']==x].index
-    temp=train['price_sqm']/np.median(train[train['month']==x]['price_sqm'])
+    temp=train['price_sqm_unNorm'][train['month']==x]/np.median(train[train['month']==x]['price_sqm_unNorm'])
     temp=train.set_value(idx,'price_sqm',temp)  
 train['lease_length']=train.month - train.lease_commence_date
 
@@ -207,7 +208,7 @@ def triple_plot(x_var,y_var,plt=plt,train=train,legend=True): #plots the median,
         plt.legend()
 
 
-def triple_plot2(x_var,y_var,plt=plt,train=train,legend=True): #plots the median, and 25,75 percentiles for hist2d plot
+def triple_plot2(x_var,y_var,plt=plt,train=train,legend=True): #plots the median only for hist2d plot
     uniq=sorted(train[x_var].unique())
     uniq= uniq
     diff = (uniq[-1]-uniq[0])/len(uniq)
@@ -231,7 +232,7 @@ Finding variables most correlated with normalized price per sqm (price_sqm)
 train.corr()['price_sqm']
 
 
-# plot size of HDB flat since earliest
+# plot size of HDB flat per year
 
 years = [1966, 1967, 1968, 1969, 1970, 1971, 1972, 1973, 1974, 1975, \
          1976, 1977, 1978, 1979, 1980, 1981, 1982, 1983, 1984, 1985, \
@@ -244,18 +245,101 @@ def function(x):
     except:
         return np.nan
 
-for i in sorted(train['flat_type'].unique()):
+for i in sorted(train['flat_type'].unique())[1:5]:
     train2=train[train['flat_type']==i]
     temp=map(lambda x : (x,function(x)),years)
     xx=[x[0] for x in temp if x[1] is not np.nan]
     yy=[x[1] for x in temp if x[1] is not np.nan]
+    print [x for x in dictt_flattype if dictt_flattype[x] ==i][0], np.mean(yy)
+    print [x[0] for x in temp if x[0] >= 2008]
+    print [x[1] for x in temp if x[0] >= 2008]
     plt.plot(xx,yy,markersize=2,alpha=0.99,linewidth=1,label=[x for x in dictt_flattype if dictt_flattype[x] ==i][0])
 
 plt.plot([1997,1997],[0,160]);plt.legend();plt.savefig('Size_over_time')
 # format from 2-room to 2 ROOM
-bto = pd.read_csv('price-range-of-hdb-flats-offered.csv',header=0)  
+
+'''
+get year offered vs the price. put words to give area offered, and colours for different flat types
+
+get average price of BTO flat (top minus medium)
+Need average size of flat to get average price per square meter
+
+removed value na to a blank, or else na becomes a string object
+cat price-range-of-hdb-flats-offered.csv | sed 's/,na//g' | sed 's/na,//g' > price-range-of-hdb-flats-offered.csv2
+
+
+'''
+
+dictt_bto_year_and_price = {'5 ROOM': 110, '3 ROOM': 65, '4 ROOM': 92, '2 ROOM': 50}
+bto = pd.read_csv('price-range-of-hdb-flats-offered.csv2',header=0)  
 bto['room_type']=map(lambda x : x[0]+' '+x[2:].upper() , bto['room_type'])
+bto['size']=0
+bto['size']=bto['room_type'].map(dictt_bto_year_and_price)
 bto['room_type']=bto['room_type'].map(dictt_flattype)
+bto['price_sqm']=0
+bto['month_mean']=0
+
+# filling in month mean 
+for year in [2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015]:
+    median= np.median(train[train.month // 1 == year].month_mean)
+    index = bto[bto['financial_year']==year].index
+    bto.set_value(index,'month_mean',median)
+bto=bto.fillna(0)
+bto['price_sqm_unNorm'] = (0.5*bto['min_selling_price']+0.5*bto['max_selling_price'])/\
+                    (bto['month_mean']*bto['size']) #yet to normalize by median
+bto['price_sqm']=0
+# filling in price per sq meter
+for x in bto.financial_year.unique(): #normalized to one using median of month as base
+    idx = bto[bto['financial_year']==x].index
+    temp=bto[bto['financial_year']==x]['price_sqm_unNorm']/np.median(train[train['month']//1==year]['price_sqm_unNorm'])
+    temp=bto.set_value(idx,'price_sqm',temp)  
+
+# this following plots makes data by town, and adds BTO data to year 0 #
+bto['town']=map(lambda x : x.upper(),bto['town'])
+bto['town']=bto['town'].map(dictt_town)
+fig, ax1 = plt.subplots(nrows=5, ncols=6,figsize=(25, 20))
+from make_custom_cmap import viridis_data
+cdict = viridis_data()
+my_cmap = matplotlib.colors.LinearSegmentedColormap('my_colormap',cdict,256)
+for i in range(0,27):
+    vmin=.01
+    vmax=1
+    if i==0:
+        a=ax1[i//6,i%6].hist2d(train[train['town']==i]['lease_length'],train[train['town']==i]['price_sqm'],100,range=((0,50),(0,3)),\
+                               norm=LogNorm(vmin=vmin,vmax=vmax),normed=True,cmap=my_cmap) #using my virgidis cmap and also only values from 0.1 to 100
+        aa=ax1[-1,-1].imshow(a[0],cmap=my_cmap,vmin=vmin,vmax=vmax,norm=LogNorm(vmin=vmin,vmax=vmax))
+        formatter = LogFormatter(10, labelOnlyBase=False) 
+        cb=fig.colorbar(aa,ax=ax1[i//6,i%6],norm=LogNorm(vmin=vmin,vmax=vmax),cmap=my_cmap, format=formatter)
+        cb.set_ticks([vmin*x for x in range(1,10)]+[vmin*10*x for x in range(1,10)]+[x for x in range(1,vmax+1,1)])
+        cb.set_ticklabels([vmin*x, '', '', '', '','' ,'' , '','' ,vmin*10*x, '', '', '', '','' ,'' , '','' , 1, '', 30,'' , '','','','','',100])
+        triple_plot('lease_length','price_sqm',plt=ax1[i//6,i%6],train=train[train['town']==i],legend=True)
+        triple_plot2('lease_length','price_sqm',plt=ax1[i//6,i%6],legend=True,train=train[train['lease_length'] > 2.5]) # something funky for lease length 0-2.5
+        ax1[i//6,i%6].set_xticks([0,10,20,30,40,50])
+        # BTO FLAT
+        bto_price=bto[bto['town']==i][train['price_sqm'] > 0]['price_sqm']
+        ax1[i//6,i%6].plot([0,]*len(bto_price),bto_price,'^')
+        # END OF BTO FLAT
+    else:
+        a=ax1[i//6,i%6].hist2d(train[train['town']==i]['lease_length'],train[train['town']==i]['price_sqm'],100,range=((0,50),(0,3)),\
+                               norm=LogNorm(vmin=vmin,vmax=vmax),normed=True,cmap=my_cmap)#,norm=LogNorm())
+        triple_plot('lease_length','price_sqm',plt=ax1[i//6,i%6],train=train[train['town']==i],legend=False)
+        triple_plot2('lease_length','price_sqm',plt=ax1[i//6,i%6],legend=False,train=train[train['lease_length'] > 2.5]) # something funky for lease length 0-2.5
+         # BTO FLAT
+        bto_price=bto[bto['town']==i][train['price_sqm'] > 0]['price_sqm']
+        ax1[i//6,i%6].plot([0,]*len(bto_price),bto_price,'^')
+        # END OF BTO FLAT       
+    ax1[i//6,i%6].set_xlabel('lease length ')
+    ax1[i//6,i%6].set_title(str([x for x in dictt_town if dictt_town[x]==i][0])+', '+str(sum(train['town']==i))+' flats')
+    ax1[i//6,i%6].set_ylabel('normalized price per sqm')
+    #print i,i//6,i%6
+    ax1[i//6,i%6].grid(True)
+
+    print sum(map(lambda x : sum(x), a[0]))
+aa=ax1[-1,-1].imshow([[0,0],[0,0]],norm=LogNorm(vmin=.1,vmax=100))
+fig.tight_layout();plt.savefig('town_BTO',dpi=300)
+
+plt.clf()
+
 print done
 
 
@@ -265,7 +349,7 @@ plt.hist2d(train[train['lease_length'] > 0]['lease_length'],train[train['lease_l
 plt.colorbar()
 plt.xlabel('lease length (years)')
 plt.ylabel('normalized price per sqm')
-triple_plot('lease_length','price_sqm',train=train[train['lease_length'] > 2.5])  # something funky for lease length 0-2.5
+triple_plot('lease_length','price_sqm',train=train[train['lease_length'] > 2.5])  # something funky for lease length 0-2.5, remove it
 plt.tight_layout()
 plt.grid(True)
 plt.savefig('leaseLength_and_price')
@@ -376,11 +460,6 @@ train[['Time_sinceMRTbuilt','price_sqm']].corr() # negative one percent correlat
 train.town.unique()
 fig, ax1 = plt.subplots(nrows=5, ncols=6,figsize=(25, 20))
 
-from make_custom_cmap import viridis_data
-
-cdict = viridis_data()
-
-my_cmap = matplotlib.colors.LinearSegmentedColormap('my_colormap',cdict,256)
 class LogNormalize(colors.Normalize):
     def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
         self.midpoint = midpoint
