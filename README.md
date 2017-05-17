@@ -2,7 +2,6 @@
 
 This project is analysing HDB prices with gov.sg data, and also GPS cordinates and distances from google maps api. 
 
-command to get file: git clone https://github.com/leexa90/HDB-prices.git
 
 # Analysis
 
@@ -31,3 +30,5 @@ raw flatfile for primary school : https://github.com/leexa90/HDB-prices/blob/mas
 BTO csv file : https://github.com/leexa90/HDB-prices/blob/master/price-range-of-hdb-flats-offered.csv
 
 
+# Getting the folder
+git clone https://github.com/leexa90/HDB-prices.git
