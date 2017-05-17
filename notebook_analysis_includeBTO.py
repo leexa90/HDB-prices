@@ -340,7 +340,7 @@ fig.tight_layout();plt.savefig('town_BTO',dpi=300)
 
 plt.clf()
 
-print done
+
 
 
 # In[12]:
@@ -358,8 +358,8 @@ plt.clf()
 
 # In[15]:
 
-plt.hist2d(train['floor_area_sqm'],train['norresale_price'],200,norm=LogNorm())
-triple_plot('floor_area_sqm','norresale_price')
+plt.hist2d(train['floor_area_sqm'],train[target],200,norm=LogNorm())
+triple_plot('floor_area_sqm',target)
 plt.colorbar()
 plt.xlabel('floor area (sq meter)')
 plt.ylabel('normalized price')
