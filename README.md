@@ -4,9 +4,9 @@ This project is analysing HDB prices with gov.sg data, and also GPS cordinates a
 
 # Analysis
 
-Presentation file : https://github.coAm/leexa90/HDB-prices/blob/master/presentation.pdf
+Presentation file : https://github.com/leexa90/HDB-prices/blob/master/presentation.pdf
 
-Python Notebook code : https://github.coAm/leexa90/HDB-prices/blob/master/Analysis.ipynb
+Python Notebook code : https://github.com/leexa90/HDB-prices/blob/master/Analysis.ipynb
 
 # Preprocessing
 
