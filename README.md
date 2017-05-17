@@ -2,6 +2,8 @@
 
 This project is analysing HDB prices with gov.sg data, and also GPS cordinates and distances from google maps api. 
 
+command to get file: git clone https://github.com/leexa90/HDB-prices.git
+
 # Analysis
 
 Presentation file : https://github.com/leexa90/HDB-prices/blob/master/presentation.pdf
