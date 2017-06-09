@@ -261,17 +261,17 @@ def main():
     plt.plot(1+x_axis+0.3*x[0]/max(x[0]),x[1][:-1]+0.5*offset , 'b',alpha=0.5)
     temp1,temp2=[],[]
     for i in 0.3*x[0]/max(x[0]):
-	temp1 += [0,i,i,0]
+        temp1 += [0,i,i,0]
     for i in x[1][1:-1]:
-	temp2 += [i,i,i,i]
+        temp2 += [i,i,i,i]
     temp2 = [x[1][0],]*2 + temp2 + [x[1][-1],]*2
     plt.plot(np.array(temp1+[0,0])+1+x_axis,temp2+[max(temp2),min(temp2)],'b',alpha=0.0)
-    plt.xlabel('Price Outlook')
-    plt.ylabel('Predicted Price')
+    plt.xlabel('Property Market Outlook')
+    plt.ylabel('Price in dollars')
     plt.setp(bp['boxes'], color='black')
     plt.setp(bp['whiskers'], color='black')
     plt.setp(bp['fliers'], color='red', marker='+')
-    xtickNames = plt.setp(ax1, xticklabels=['poor','current\n(predicted price)','good','current\n(actual price)'])
+    xtickNames = plt.setp(ax1, xticklabels=['poor\n(predicted)','current\n(predicted)','good\n(predicted)','current\n(actual)'])
     plt.tight_layout()
     plt.grid(True)
     plt.savefig('forcast',dpi=200)
