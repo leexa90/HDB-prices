@@ -2,6 +2,7 @@
 
 This project is analysing HDB prices with gov.sg data, and also GPS cordinates and distances from google maps api. 
 
+Visualize using tableau public at https://public.tableau.com/profile/lee.xa#!/vizhome/HDB_resale_analysis_Jul2020/1_TrendsinHDBresaleprices
 
 # Analysis
 
